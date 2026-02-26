@@ -42,6 +42,107 @@ const FEATURES = [
 
 const NAV_ITEMS = ["Home", "Case Study", "Get Started", "About"];
 
+// ─── Global responsive styles injected once ───
+const RESPONSIVE_CSS = `
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; overflow-x: hidden; }
+
+  /* Hamburger icon */
+  .hamburger-line {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: #e8e8e8;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+  .hamburger-open .line1 { transform: translateY(8px) rotate(45deg); }
+  .hamburger-open .line2 { opacity: 0; transform: scaleX(0); }
+  .hamburger-open .line3 { transform: translateY(-8px) rotate(-45deg); }
+
+  /* Mobile nav menu */
+  .mobile-menu {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(10, 15, 10, 0.98);
+    border-bottom: 1px solid #1e2e1e;
+    backdrop-filter: blur(20px);
+    padding: 8px 0 16px;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu-item {
+    padding: 14px 24px;
+    color: #888888;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: color 0.2s ease;
+  }
+  .mobile-menu-item:hover,
+  .mobile-menu-item.active { color: #4CAF50; }
+  .mobile-menu-item.cta {
+    margin: 8px 24px 0;
+    background: #2E7D32;
+    color: #ffffff;
+    border-radius: 6px;
+    text-align: center;
+    padding: 12px 24px;
+  }
+
+  /* Card hover */
+  .feature-card:hover {
+    transform: translateY(-4px);
+    background: #162016 !important;
+  }
+
+  @media (max-width: 768px) {
+    .desktop-nav { display: none !important; }
+    .hamburger-btn { display: flex !important; }
+
+    .hero-title { font-size: clamp(42px, 11vw, 72px) !important; }
+    .hero-subtitle { font-size: 16px !important; }
+    .hero-buttons { flex-direction: column !important; gap: 12px !important; }
+    .hero-buttons button { width: 100% !important; padding: 16px !important; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+    .section-title { font-size: clamp(32px, 9vw, 48px) !important; }
+    .features-grid { grid-template-columns: 1fr !important; }
+    .case-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .case-checklist { grid-template-columns: 1fr !important; }
+    .chat-bubble { max-width: 90% !important; }
+
+    .form-2col { grid-template-columns: 1fr !important; }
+    .complexity-grid { grid-template-columns: 1fr !important; }
+    .form-card { padding: 24px !important; }
+
+    .about-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .about-visual { aspect-ratio: unset !important; min-height: 180px !important; }
+    .about-buttons { flex-direction: column !important; }
+    .about-buttons a { text-align: center !important; }
+
+    .section-pad { padding: 70px 20px !important; }
+    .hero-pad { padding: 100px 20px 60px !important; }
+  }
+
+  @media (max-width: 480px) {
+    .hero-title { font-size: clamp(34px, 10vw, 48px) !important; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .case-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .stat-value { font-size: 26px !important; }
+  }
+`;
+
 // ─── Animated counter ───
 function Counter({ end, suffix = "", duration = 2000 }) {
   const [count, setCount] = useState(0);
@@ -112,12 +213,18 @@ function FadeIn({ children, delay = 0, className = "" }) {
 // ─── Navigation ───
 function Nav({ active, onNav }) {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleNavClick = (item) => {
+    setMenuOpen(false);
+    onNav(item);
+  };
 
   return (
     <nav
@@ -127,79 +234,94 @@ function Nav({ active, onNav }) {
         left: 0,
         right: 0,
         zIndex: 1000,
-        padding: "16px 40px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        background: scrolled ? "rgba(10, 15, 10, 0.95)" : "transparent",
-        backdropFilter: scrolled ? "blur(20px)" : "none",
-        borderBottom: scrolled
-          ? `1px solid ${BRAND.border}`
-          : "1px solid transparent",
+        background: scrolled || menuOpen ? "rgba(10, 15, 10, 0.97)" : "transparent",
+        backdropFilter: scrolled || menuOpen ? "blur(20px)" : "none",
+        borderBottom: scrolled || menuOpen ? `1px solid ${BRAND.border}` : "1px solid transparent",
         transition: "all 0.3s ease",
       }}
     >
       <div
-        onClick={() => onNav("Home")}
         style={{
-          cursor: "pointer",
+          padding: "16px 24px",
           display: "flex",
-          alignItems: "baseline",
-          gap: "2px",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <span
+        {/* Logo */}
+        <div
+          onClick={() => handleNavClick("Home")}
+          style={{ cursor: "pointer", display: "flex", alignItems: "baseline", gap: "2px" }}
+        >
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 700, color: BRAND.white, letterSpacing: "-1px" }}>
+            rom
+          </span>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 700, color: BRAND.green, letterSpacing: "-1px" }}>
+            AI
+          </span>
+        </div>
+
+        {/* Desktop nav */}
+        <div className="desktop-nav" style={{ display: "flex", gap: "32px", alignItems: "center" }}>
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item}
+              onClick={() => handleNavClick(item)}
+              style={{
+                background: item === "Get Started" ? BRAND.greenDark : "none",
+                border: "none",
+                color: active === item ? BRAND.green : BRAND.textMuted,
+                fontFamily: "'Space Mono', monospace",
+                fontSize: "13px",
+                cursor: "pointer",
+                padding: item === "Get Started" ? "8px 20px" : "8px 0",
+                borderRadius: item === "Get Started" ? "6px" : 0,
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => { if (item !== "Get Started") e.target.style.color = BRAND.green; }}
+              onMouseLeave={(e) => { if (item !== "Get Started" && active !== item) e.target.style.color = BRAND.textMuted; }}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+
+        {/* Hamburger button — hidden on desktop via CSS */}
+        <button
+          className="hamburger-btn"
+          onClick={() => setMenuOpen((o) => !o)}
           style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "24px",
-            fontWeight: 700,
-            color: BRAND.white,
-            letterSpacing: "-1px",
+            display: "none", // overridden by CSS on mobile
+            flexDirection: "column",
+            gap: "6px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "4px",
           }}
         >
-          rom
-        </span>
-        <span
-          style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "24px",
-            fontWeight: 700,
-            color: BRAND.green,
-            letterSpacing: "-1px",
-          }}
-        >
-          AI
-        </span>
+          <span className={`hamburger-line line1 ${menuOpen ? "" : ""}`} style={{ display: "block", width: "22px", height: "2px", background: BRAND.text, borderRadius: "2px", transition: "all 0.3s ease", transform: menuOpen ? "translateY(8px) rotate(45deg)" : "none" }} />
+          <span style={{ display: "block", width: "22px", height: "2px", background: BRAND.text, borderRadius: "2px", transition: "all 0.3s ease", opacity: menuOpen ? 0 : 1 }} />
+          <span style={{ display: "block", width: "22px", height: "2px", background: BRAND.text, borderRadius: "2px", transition: "all 0.3s ease", transform: menuOpen ? "translateY(-8px) rotate(-45deg)" : "none" }} />
+        </button>
       </div>
-      <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-        {NAV_ITEMS.map((item) => (
+
+      {/* Mobile menu */}
+      <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
+        {NAV_ITEMS.filter((i) => i !== "Get Started").map((item) => (
           <button
             key={item}
-            onClick={() => onNav(item)}
-            style={{
-              background: item === "Get Started" ? BRAND.greenDark : "none",
-              border: "none",
-              color: active === item ? BRAND.green : BRAND.textMuted,
-              fontFamily: "'Space Mono', monospace",
-              fontSize: "13px",
-              cursor: "pointer",
-              padding: item === "Get Started" ? "8px 20px" : "8px 0",
-              borderRadius: item === "Get Started" ? "6px" : 0,
-              letterSpacing: "1px",
-              textTransform: "uppercase",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (item !== "Get Started") e.target.style.color = BRAND.green;
-            }}
-            onMouseLeave={(e) => {
-              if (item !== "Get Started" && active !== item)
-                e.target.style.color = BRAND.textMuted;
-            }}
+            onClick={() => handleNavClick(item)}
+            className={`mobile-menu-item ${active === item ? "active" : ""}`}
           >
             {item}
           </button>
         ))}
+        <button onClick={() => handleNavClick("Get Started")} className="mobile-menu-item cta">
+          Get Started
+        </button>
       </div>
     </nav>
   );
@@ -209,6 +331,7 @@ function Nav({ active, onNav }) {
 function Hero({ onNav }) {
   return (
     <section
+      className="hero-pad"
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -239,7 +362,7 @@ function Hero({ onNav }) {
       <FadeIn>
         <div
           style={{
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: "10px",
             padding: "10px 18px",
@@ -274,6 +397,7 @@ function Hero({ onNav }) {
 
       <FadeIn delay={0.1}>
         <h1
+          className="hero-title"
           style={{
             fontFamily: "'Playfair Display', Georgia, serif",
             fontSize: "86px",
@@ -294,6 +418,7 @@ function Hero({ onNav }) {
 
       <FadeIn delay={0.2}>
         <p
+          className="hero-subtitle"
           style={{
             fontFamily: "'DM Sans', sans-serif",
             fontSize: "20px",
@@ -309,7 +434,7 @@ function Hero({ onNav }) {
       </FadeIn>
 
       <FadeIn delay={0.3}>
-        <div style={{ display: "flex", gap: "18px", marginTop: "44px" }}>
+        <div className="hero-buttons" style={{ display: "flex", gap: "18px", marginTop: "44px", width: "100%", maxWidth: "480px", justifyContent: "center" }}>
           <button
             onClick={() => onNav("Get Started")}
             style={{
@@ -365,49 +490,49 @@ function Hero({ onNav }) {
             borderRadius: "16px",
             border: `1px solid ${BRAND.border}`,
             background: BRAND.bgCard,
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "20px",
           }}
         >
-          {[
-            { val: "24/7", label: "Availability" },
-            { val: "100%", label: "Calls Answered" },
-            { val: "2 min", label: "Avg Booking Time" },
-            { val: "0", label: "Missed Calls" },
-          ].map((s) => (
-            <div
-              key={s.label}
-              style={{
-                textAlign: "center",
-                borderRadius: "12px",
-                padding: "18px 10px",
-                border: `1px solid ${BRAND.border}`,
-                background: "rgba(10, 15, 10, 0.4)",
-              }}
-            >
+          <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}>
+            {[
+              { val: "24/7", label: "Availability" },
+              { val: "100%", label: "Calls Answered" },
+              { val: "2 min", label: "Avg Booking Time" },
+              { val: "0", label: "Missed Calls" },
+            ].map((s) => (
               <div
+                key={s.label}
                 style={{
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: "34px",
-                  fontWeight: 700,
-                  color: BRAND.green,
-                  marginBottom: "8px",
+                  textAlign: "center",
+                  borderRadius: "12px",
+                  padding: "18px 10px",
+                  border: `1px solid ${BRAND.border}`,
+                  background: "rgba(10, 15, 10, 0.4)",
                 }}
               >
-                {s.val}
+                <div
+                  className="stat-value"
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "34px",
+                    fontWeight: 700,
+                    color: BRAND.green,
+                    marginBottom: "8px",
+                  }}
+                >
+                  {s.val}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: "13px",
+                    color: BRAND.textMuted,
+                  }}
+                >
+                  {s.label}
+                </div>
               </div>
-              <div
-                style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: "13px",
-                  color: BRAND.textMuted,
-                }}
-              >
-                {s.label}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </FadeIn>
     </section>
@@ -417,7 +542,7 @@ function Hero({ onNav }) {
 // ─── What I Build ───
 function WhatIBuild() {
   return (
-    <section style={{ padding: "100px 40px", maxWidth: "1100px", margin: "0 auto" }}>
+    <section className="section-pad" style={{ padding: "100px 40px", maxWidth: "1100px", margin: "0 auto" }}>
       <FadeIn>
         <div style={{ textAlign: "center", marginBottom: "60px" }}>
           <span
@@ -432,6 +557,7 @@ function WhatIBuild() {
             Capabilities
           </span>
           <h2
+            className="section-title"
             style={{
               fontFamily: "'Playfair Display', Georgia, serif",
               fontSize: "54px",
@@ -444,57 +570,36 @@ function WhatIBuild() {
         </div>
       </FadeIn>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "22px" }}>
+      <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "22px" }}>
         {[
-          {
-            icon: "📞",
-            title: "Answers Every Call",
-            desc: "24/7, holidays included. Handles multiple calls simultaneously.",
-          },
-          {
-            icon: "🗓️",
-            title: "Books Appointments",
-            desc: "Checks real-time availability and confirms instantly.",
-          },
-          {
-            icon: "✉️",
-            title: "Sends Confirmations",
-            desc: "Professional email confirmations seconds after booking.",
-          },
-          {
-            icon: "🔁",
-            title: "Handles Changes",
-            desc: "Cancellations and reschedules with automatic calendar updates.",
-          },
-          {
-            icon: "👤",
-            title: "Remembers Customers",
-            desc: "Returning customers greeted by name with history on file.",
-          },
-          {
-            icon: "📊",
-            title: "Live Dashboard",
-            desc: "Real-time analytics you can access from any device.",
-          },
+          { icon: "📞", title: "Answers Every Call", desc: "24/7, holidays included. Handles multiple calls simultaneously." },
+          { icon: "🗓️", title: "Books Appointments", desc: "Checks real-time availability and confirms instantly." },
+          { icon: "✉️", title: "Sends Confirmations", desc: "Professional email confirmations seconds after booking." },
+          { icon: "🔁", title: "Handles Changes", desc: "Cancellations and reschedules with automatic calendar updates." },
+          { icon: "👤", title: "Remembers Customers", desc: "Returning customers greeted by name with history on file." },
+          { icon: "📊", title: "Live Dashboard", desc: "Real-time analytics you can access from any device." },
         ].map((c) => (
           <FadeIn key={c.title} delay={0.05}>
             <div
+              className="feature-card"
               style={{
                 border: `1px solid ${BRAND.border}`,
                 borderRadius: "16px",
                 background: BRAND.bgCard,
                 padding: "30px",
                 transition: "transform 0.2s ease, background 0.2s ease",
+                height: "100%",
               }}
             >
               <div style={{ fontSize: "28px", marginBottom: "16px" }}>{c.icon}</div>
               <div
                 style={{
                   fontFamily: "'Space Mono', monospace",
-                  fontSize: "18px",
+                  fontSize: "16px",
                   color: BRAND.white,
                   marginBottom: "10px",
-                  letterSpacing: "1px",
+                  letterSpacing: "0.5px",
+                  lineHeight: 1.3,
                 }}
               >
                 {c.title}
@@ -513,7 +618,7 @@ function WhatIBuild() {
 // ─── Case Study ───
 function CaseStudy() {
   return (
-    <section id="casestudy" style={{ padding: "100px 40px", maxWidth: "1100px", margin: "0 auto" }}>
+    <section id="casestudy" className="section-pad" style={{ padding: "100px 40px", maxWidth: "1100px", margin: "0 auto" }}>
       <FadeIn>
         <div style={{ textAlign: "center", marginBottom: "60px" }}>
           <span
@@ -528,6 +633,7 @@ function CaseStudy() {
             Case Study
           </span>
           <h2
+            className="section-title"
             style={{
               fontFamily: "'Playfair Display', Georgia, serif",
               fontSize: "56px",
@@ -558,41 +664,21 @@ function CaseStudy() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-            <div style={{ alignSelf: "flex-end", maxWidth: "70%", borderRadius: "12px", padding: "18px", background: "rgba(255,255,255,0.04)", border: `1px solid ${BRAND.border}` }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", color: BRAND.textDim, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "8px" }}>
-                Customer
+            {[
+              { role: "Customer", text: "Hi, I'd like to book a detail for my car this week.", align: "flex-end", bg: "rgba(255,255,255,0.04)", labelColor: BRAND.textDim },
+              { role: "Alex (AI)", text: "Of course! I have openings tomorrow at 9 AM, 11 AM, and 2 PM. Which works best for you?", align: "flex-start", bg: BRAND.greenDark + "33", labelColor: BRAND.green },
+              { role: "Customer", text: "9 AM sounds good. My name is Amal.", align: "flex-end", bg: "rgba(255,255,255,0.04)", labelColor: BRAND.textDim },
+              { role: "Alex (AI)", text: "You're booked for tomorrow at 9 AM. A confirmation email is on its way. We look forward to seeing you!", align: "flex-start", bg: BRAND.greenDark + "33", labelColor: BRAND.green },
+            ].map((msg, i) => (
+              <div key={i} className="chat-bubble" style={{ alignSelf: msg.align, maxWidth: "75%", borderRadius: "12px", padding: "18px", background: msg.bg, border: `1px solid ${BRAND.border}` }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", color: msg.labelColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "8px" }}>
+                  {msg.role}
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: BRAND.white, lineHeight: 1.6 }}>
+                  {msg.text}
+                </div>
               </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: BRAND.white, lineHeight: 1.6 }}>
-                Hi, I'd like to book a detail for my car this week.
-              </div>
-            </div>
-
-            <div style={{ alignSelf: "flex-start", maxWidth: "75%", borderRadius: "12px", padding: "18px", background: BRAND.greenDark + "33", border: `1px solid ${BRAND.border}` }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", color: BRAND.green, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "8px" }}>
-                Alex (AI)
-              </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: BRAND.white, lineHeight: 1.6 }}>
-                Of course! I have openings tomorrow at 9 AM, 11 AM, and 2 PM. Which works best for you?
-              </div>
-            </div>
-
-            <div style={{ alignSelf: "flex-end", maxWidth: "70%", borderRadius: "12px", padding: "18px", background: "rgba(255,255,255,0.04)", border: `1px solid ${BRAND.border}` }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", color: BRAND.textDim, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "8px" }}>
-                Customer
-              </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: BRAND.white, lineHeight: 1.6 }}>
-                9 AM sounds good. My name is Amal.
-              </div>
-            </div>
-
-            <div style={{ alignSelf: "flex-start", maxWidth: "75%", borderRadius: "12px", padding: "18px", background: BRAND.greenDark + "33", border: `1px solid ${BRAND.border}` }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", color: BRAND.green, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "8px" }}>
-                Alex (AI)
-              </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: BRAND.white, lineHeight: 1.6 }}>
-                You're booked for tomorrow at 9 AM. A confirmation email is on its way. We look forward to seeing you!
-              </div>
-            </div>
+            ))}
           </div>
 
           <div style={{ marginTop: "22px", fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: BRAND.textDim, textAlign: "center" }}>
@@ -602,7 +688,7 @@ function CaseStudy() {
       </FadeIn>
 
       <FadeIn delay={0.2}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "18px", marginBottom: "28px" }}>
+        <div className="case-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "18px", marginBottom: "28px" }}>
           {[
             { end: 16, label: "Services Managed" },
             { end: 7, label: "Automated Workflows" },
@@ -619,7 +705,7 @@ function CaseStudy() {
                 textAlign: "center",
               }}
             >
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "34px", fontWeight: 700, color: BRAND.green, marginBottom: "10px" }}>
+              <div className="stat-value" style={{ fontFamily: "'Space Mono', monospace", fontSize: "34px", fontWeight: 700, color: BRAND.green, marginBottom: "10px" }}>
                 <Counter end={s.end} suffix={s.suffix || ""} />
               </div>
               <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", color: BRAND.textMuted, letterSpacing: "2px", textTransform: "uppercase" }}>
@@ -629,7 +715,7 @@ function CaseStudy() {
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+        <div className="case-checklist" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
           {[
             "Books, cancels, and reschedules appointments",
             "Recognizes returning customers by phone number",
@@ -652,7 +738,7 @@ function CaseStudy() {
                 alignItems: "flex-start",
               }}
             >
-              <div style={{ color: BRAND.green, fontSize: "16px", marginTop: "2px" }}>✓</div>
+              <div style={{ color: BRAND.green, fontSize: "16px", marginTop: "2px", flexShrink: 0 }}>✓</div>
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: BRAND.white, lineHeight: 1.6 }}>
                 {t}
               </div>
@@ -693,23 +779,16 @@ function IntakeForm() {
     }));
   };
 
-  // ✅ Formspree endpoint (your email form)
   const FORMSPREE_URL = "https://formspree.io/f/xrearnny";
 
-  // ✅ Submit to email (no backend needed)
   const submitToEmail = async () => {
     setError("");
-
-    // Required fields
     if (!form.name || !form.email || !form.business || !form.industry) {
       setError("Please fill in Name, Email, Business Name, and select an Industry.");
       return;
     }
-
     try {
       setIsSubmitting(true);
-
-      // Make the email body easy to read in your inbox
       const messageLines = [
         `Name: ${form.name}`,
         `Email: ${form.email}`,
@@ -722,31 +801,21 @@ function IntakeForm() {
         `Complexity: ${form.complexity}`,
         `Notes: ${form.notes || "-"}`,
       ];
-
       const payload = {
         ...form,
         message: messageLines.join("\n"),
         _subject: `New romAI lead: ${form.business} (${form.industry})`,
       };
-
       const res = await fetch(FORMSPREE_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload),
       });
-
       if (!res.ok) {
         let detail = "";
-        try {
-          const data = await res.json();
-          detail = data?.error || data?.message || "";
-        } catch (_) {}
+        try { const data = await res.json(); detail = data?.error || data?.message || ""; } catch (_) {}
         throw new Error(detail || "Submission failed. Please try again.");
       }
-
       setSubmitted(true);
     } catch (e) {
       setError(e?.message || "Something went wrong. Please try again.");
@@ -783,138 +852,65 @@ function IntakeForm() {
     return (
       <section
         id="getstarted"
-        style={{
-          padding: "100px 40px",
-          maxWidth: "700px",
-          margin: "0 auto",
-          textAlign: "center",
-        }}
+        className="section-pad"
+        style={{ padding: "100px 40px", maxWidth: "700px", margin: "0 auto", textAlign: "center" }}
       >
         <div style={{ fontSize: "64px", marginBottom: "24px" }}>✓</div>
-        <h2
-          style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: "36px",
-            color: BRAND.white,
-          }}
-        >
+        <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "36px", color: BRAND.white }}>
           Request Received
         </h2>
-        <p
-          style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "17px",
-            color: BRAND.textMuted,
-            marginTop: "16px",
-            lineHeight: 1.7,
-          }}
-        >
-          I'll review your details and get back to you within 24 hours with a timeline
-          and proposal tailored to your business.
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "17px", color: BRAND.textMuted, marginTop: "16px", lineHeight: 1.7 }}>
+          I'll review your details and get back to you within 24 hours with a timeline and proposal tailored to your business.
         </p>
       </section>
     );
   }
 
   return (
-    <section id="getstarted" style={{ padding: "100px 40px", maxWidth: "800px", margin: "0 auto" }}>
+    <section id="getstarted" className="section-pad" style={{ padding: "100px 40px", maxWidth: "800px", margin: "0 auto" }}>
       <FadeIn>
         <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <span
-            style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: "12px",
-              color: BRAND.green,
-              letterSpacing: "3px",
-              textTransform: "uppercase",
-            }}
-          >
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "12px", color: BRAND.green, letterSpacing: "3px", textTransform: "uppercase" }}>
             Get Started
           </span>
-          <h2
-            style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
-              fontSize: "44px",
-              color: BRAND.white,
-              marginTop: "12px",
-            }}
-          >
+          <h2 className="section-title" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "44px", color: BRAND.white, marginTop: "12px" }}>
             Build Your AI Agent
           </h2>
-          <p
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: "17px",
-              color: BRAND.textMuted,
-              maxWidth: "500px",
-              margin: "16px auto 0",
-              lineHeight: 1.7,
-            }}
-          >
-            Tell me about your business and I'll build a custom voice agent tailored
-            to your needs.
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "17px", color: BRAND.textMuted, maxWidth: "500px", margin: "16px auto 0", lineHeight: 1.7 }}>
+            Tell me about your business and I'll build a custom voice agent tailored to your needs.
           </p>
         </div>
       </FadeIn>
 
       <FadeIn delay={0.1}>
         <div
-          style={{
-            border: `1px solid ${BRAND.border}`,
-            borderRadius: "16px",
-            background: BRAND.bgCard,
-            padding: "40px",
-          }}
+          className="form-card"
+          style={{ border: `1px solid ${BRAND.border}`, borderRadius: "16px", background: BRAND.bgCard, padding: "40px" }}
         >
           {/* Contact info */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
+          <div className="form-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
             <div>
               <label style={labelStyle}>Your Name *</label>
-              <input
-                style={inputStyle}
-                value={form.name}
-                onChange={(e) => update("name", e.target.value)}
-                placeholder="John Doe"
-                onFocus={(e) => (e.target.style.borderColor = BRAND.green)}
-                onBlur={(e) => (e.target.style.borderColor = BRAND.border)}
-              />
+              <input style={inputStyle} value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="John Doe"
+                onFocus={(e) => (e.target.style.borderColor = BRAND.green)} onBlur={(e) => (e.target.style.borderColor = BRAND.border)} />
             </div>
             <div>
               <label style={labelStyle}>Email *</label>
-              <input
-                style={inputStyle}
-                type="email"
-                value={form.email}
-                onChange={(e) => update("email", e.target.value)}
-                placeholder="john@business.com"
-                onFocus={(e) => (e.target.style.borderColor = BRAND.green)}
-                onBlur={(e) => (e.target.style.borderColor = BRAND.border)}
-              />
+              <input style={inputStyle} type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="john@business.com"
+                onFocus={(e) => (e.target.style.borderColor = BRAND.green)} onBlur={(e) => (e.target.style.borderColor = BRAND.border)} />
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
+          <div className="form-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
             <div>
               <label style={labelStyle}>Phone Number</label>
-              <input
-                style={inputStyle}
-                value={form.phone}
-                onChange={(e) => update("phone", e.target.value)}
-                placeholder="+94 77 555 1234"
-                onFocus={(e) => (e.target.style.borderColor = BRAND.green)}
-                onBlur={(e) => (e.target.style.borderColor = BRAND.border)}
-              />
+              <input style={inputStyle} value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+94 77 555 1234"
+                onFocus={(e) => (e.target.style.borderColor = BRAND.green)} onBlur={(e) => (e.target.style.borderColor = BRAND.border)} />
             </div>
             <div>
               <label style={labelStyle}>Business Name *</label>
-              <input
-                style={inputStyle}
-                value={form.business}
-                onChange={(e) => update("business", e.target.value)}
-                placeholder="Your Business Name"
-                onFocus={(e) => (e.target.style.borderColor = BRAND.green)}
-                onBlur={(e) => (e.target.style.borderColor = BRAND.border)}
-              />
+              <input style={inputStyle} value={form.business} onChange={(e) => update("business", e.target.value)} placeholder="Your Business Name"
+                onFocus={(e) => (e.target.style.borderColor = BRAND.green)} onBlur={(e) => (e.target.style.borderColor = BRAND.border)} />
             </div>
           </div>
 
@@ -947,26 +943,15 @@ function IntakeForm() {
           {/* Services & Hours */}
           <div style={{ marginBottom: "24px" }}>
             <label style={labelStyle}>Your Services (list them)</label>
-            <textarea
-              style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
-              value={form.services}
-              onChange={(e) => update("services", e.target.value)}
+            <textarea style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} value={form.services} onChange={(e) => update("services", e.target.value)}
               placeholder="e.g. Haircut - $30, Color - $80, Blowout - $45..."
-              onFocus={(e) => (e.target.style.borderColor = BRAND.green)}
-              onBlur={(e) => (e.target.style.borderColor = BRAND.border)}
-            />
+              onFocus={(e) => (e.target.style.borderColor = BRAND.green)} onBlur={(e) => (e.target.style.borderColor = BRAND.border)} />
           </div>
 
           <div style={{ marginBottom: "24px" }}>
             <label style={labelStyle}>Business Hours</label>
-            <input
-              style={inputStyle}
-              value={form.hours}
-              onChange={(e) => update("hours", e.target.value)}
-              placeholder="e.g. Mon-Sat 8 AM - 6 PM, Closed Sunday"
-              onFocus={(e) => (e.target.style.borderColor = BRAND.green)}
-              onBlur={(e) => (e.target.style.borderColor = BRAND.border)}
-            />
+            <input style={inputStyle} value={form.hours} onChange={(e) => update("hours", e.target.value)} placeholder="e.g. Mon-Sat 8 AM - 6 PM, Closed Sunday"
+              onFocus={(e) => (e.target.style.borderColor = BRAND.green)} onBlur={(e) => (e.target.style.borderColor = BRAND.border)} />
           </div>
 
           {/* Features */}
@@ -999,7 +984,7 @@ function IntakeForm() {
           {/* Complexity */}
           <div style={{ marginBottom: "24px" }}>
             <label style={labelStyle}>Agent Complexity</label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+            <div className="complexity-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
               {[
                 { id: "basic", label: "Basic", desc: "Answer calls, provide info, take messages" },
                 { id: "standard", label: "Standard", desc: "Full booking system, email confirmations, CRM" },
@@ -1018,15 +1003,7 @@ function IntakeForm() {
                     textAlign: "center",
                   }}
                 >
-                  <div
-                    style={{
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: "14px",
-                      color: form.complexity === c.id ? BRAND.green : BRAND.white,
-                      fontWeight: 700,
-                      marginBottom: "6px",
-                    }}
-                  >
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "14px", color: form.complexity === c.id ? BRAND.green : BRAND.white, fontWeight: 700, marginBottom: "6px" }}>
                     {c.label}
                   </div>
                   <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: BRAND.textMuted, lineHeight: 1.5 }}>
@@ -1040,25 +1017,13 @@ function IntakeForm() {
           {/* Notes */}
           <div style={{ marginBottom: "32px" }}>
             <label style={labelStyle}>Anything Else?</label>
-            <textarea
-              style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
-              value={form.notes}
-              onChange={(e) => update("notes", e.target.value)}
+            <textarea style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} value={form.notes} onChange={(e) => update("notes", e.target.value)}
               placeholder="Special requirements, existing systems, timeline preferences..."
-              onFocus={(e) => (e.target.style.borderColor = BRAND.green)}
-              onBlur={(e) => (e.target.style.borderColor = BRAND.border)}
-            />
+              onFocus={(e) => (e.target.style.borderColor = BRAND.green)} onBlur={(e) => (e.target.style.borderColor = BRAND.border)} />
           </div>
 
           {error && (
-            <div
-              style={{
-                marginBottom: "16px",
-                color: "#ff6b6b",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "14px",
-              }}
-            >
+            <div style={{ marginBottom: "16px", color: "#ff6b6b", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>
               {error}
             </div>
           )}
@@ -1081,12 +1046,8 @@ function IntakeForm() {
               transition: "all 0.2s ease",
               boxShadow: `0 0 30px ${BRAND.greenGlow}`,
             }}
-            onMouseEnter={(e) => {
-              e.target.style.background = BRAND.green;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = BRAND.greenDark;
-            }}
+            onMouseEnter={(e) => { e.target.style.background = BRAND.green; }}
+            onMouseLeave={(e) => { e.target.style.background = BRAND.greenDark; }}
           >
             {isSubmitting ? "SENDING…" : "SUBMIT REQUEST →"}
           </button>
@@ -1099,11 +1060,12 @@ function IntakeForm() {
 // ─── About Section ───
 function About() {
   return (
-    <section id="about" style={{ padding: "100px 40px", maxWidth: "900px", margin: "0 auto" }}>
+    <section id="about" className="section-pad" style={{ padding: "100px 40px", maxWidth: "900px", margin: "0 auto" }}>
       <FadeIn>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "60px", alignItems: "center" }}>
+        <div className="about-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "60px", alignItems: "center" }}>
           {/* Left - Visual */}
           <div
+            className="about-visual"
             style={{
               aspectRatio: "1",
               borderRadius: "16px",
@@ -1138,15 +1100,7 @@ function About() {
 
           {/* Right - Text */}
           <div>
-            <span
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                fontSize: "12px",
-                color: BRAND.green,
-                letterSpacing: "3px",
-                textTransform: "uppercase",
-              }}
-            >
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "12px", color: BRAND.green, letterSpacing: "3px", textTransform: "uppercase" }}>
               About
             </span>
             <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "36px", color: BRAND.white, marginTop: "12px", marginBottom: "20px" }}>
@@ -1163,7 +1117,7 @@ function About() {
                 Based in the United States, serving businesses worldwide. If your phone rings and nobody picks up, you're losing customers. I fix that.
               </p>
             </div>
-            <div style={{ display: "flex", gap: "24px", marginTop: "32px" }}>
+            <div className="about-buttons" style={{ display: "flex", gap: "24px", marginTop: "32px" }}>
               <a
                 href="mailto:romaanroshanro@gmail.com"
                 style={{
@@ -1176,6 +1130,7 @@ function About() {
                   textDecoration: "none",
                   letterSpacing: "1px",
                   transition: "all 0.2s ease",
+                  display: "inline-block",
                 }}
               >
                 GET IN TOUCH
@@ -1193,7 +1148,7 @@ function Footer() {
   return (
     <footer
       style={{
-        padding: "40px",
+        padding: "40px 24px",
         borderTop: `1px solid ${BRAND.border}`,
         textAlign: "center",
         marginTop: "60px",
@@ -1229,6 +1184,7 @@ export default function App() {
 
   return (
     <div style={{ background: BRAND.bg, minHeight: "100vh", color: BRAND.text }}>
+      <style>{RESPONSIVE_CSS}</style>
       <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap"
         rel="stylesheet"

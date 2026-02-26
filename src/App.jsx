@@ -254,7 +254,7 @@ function Nav({ active, onNav }) {
           style={{ cursor: "pointer", display: "flex", alignItems: "baseline", gap: "2px" }}
         >
           <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 700, color: BRAND.white, letterSpacing: "-1px" }}>
-            rom
+            Zenith
           </span>
           <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 700, color: BRAND.green, letterSpacing: "-1px" }}>
             AI
@@ -1090,7 +1090,7 @@ function About() {
             />
             <div style={{ position: "relative" }}>
               <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "48px", fontWeight: 700, color: BRAND.white, textAlign: "center" }}>
-                rom<span style={{ color: BRAND.green }}>AI</span>
+                Zenith<span style={{ color: BRAND.green }}>AI</span>
               </div>
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: BRAND.textMuted, textAlign: "center", marginTop: "8px", letterSpacing: "2px" }}>
                 AI VOICE SOLUTIONS
@@ -1119,7 +1119,7 @@ function About() {
             </div>
             <div className="about-buttons" style={{ display: "flex", gap: "24px", marginTop: "32px" }}>
               <a
-                href="mailto:romaanroshanro@gmail.com"
+                href="mailto:zenithai003@gmail.com"
                 style={{
                   padding: "14px 28px",
                   background: BRAND.greenDark,
@@ -1155,13 +1155,13 @@ function Footer() {
       }}
     >
       <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "18px", color: BRAND.white, marginBottom: "12px" }}>
-        rom<span style={{ color: BRAND.green }}>AI</span>
+        Zenith<span style={{ color: BRAND.green }}>AI</span>
       </div>
       <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: BRAND.textDim }}>
-        romaanroshanro@gmail.com · romai.co
+        zenithai003@gmail.com · zenithai.co
       </div>
       <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: BRAND.textDim, marginTop: "8px" }}>
-        © 2025 romAI. All rights reserved.
+        © 2025 ZenithAI. All rights reserved.
       </div>
     </footer>
   );
